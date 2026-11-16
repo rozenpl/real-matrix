@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-import zabbix_matrix_rain as zmr  # noqa: E402
+import real_matrix as zmr  # noqa: E402
 
 
 class FakeClient:

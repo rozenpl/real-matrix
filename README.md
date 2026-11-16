@@ -1,15 +1,27 @@
-# zabbix-matrix-rain
+# Real Matrix
 
-[Русский](README.ru.md)
-
-Matrix-style "digital rain" in your terminal, driven by your Zabbix. The busier
-your hosts, the denser and faster the code falls; open problems tint a host's
-band with the severity colour, and a new problem shakes the whole screen.
+Matrix-style "digital rain" in your terminal, but not a random one: your Zabbix
+draws it. The busier your hosts, the denser and faster the code falls; open
+problems tint a host's band with the severity colour, and a new problem shakes
+the whole screen.
 
 ![demo mode](docs/demo.png)
 
-Not very useful, but pretty: on a second monitor, a server room screen or as a
-tmux screensaver.
+## What it is for
+
+Real Matrix turns the state of your infrastructure into a screensaver. Keep it on
+a second monitor, a server room screen or in a corner of your desktop and read
+the situation at a glance, even from across the room:
+
+* calm green rain: all is quiet;
+* one band pouring dense and fast: that host is working hard right now;
+* coloured bands: those hosts have open problems, the colour tells how bad;
+* a full-screen glitch: something new has just happened, the host and the
+  problem text appear in the centre and in the status line.
+
+It is a decoration, not a replacement for alerting: notifications, on-call and
+problem handling stay in Zabbix. Real Matrix changes nothing in Zabbix and never
+acknowledges problems.
 
 ## How the data becomes rain
 
@@ -30,6 +42,32 @@ what that looks like.
 Hosts without fresh CPU data (e.g. network devices without such an item) stay
 on screen, their band just falls slowly.
 
+## How it works
+
+It is a single Python file with two independent parts.
+
+**Polling Zabbix.** A background thread calls the Zabbix API every 30 seconds
+(`--interval`) with an API token, using read-only methods only:
+
+1. `host.get`: the monitored hosts (or only those of the chosen groups, `--group`);
+2. `item.get`: the latest values of CPU utilisation and interface traffic. Only
+   the last value is read, no history is queried. Several CPUs of a host are
+   averaged, several interfaces are summed;
+3. `trigger.get`: triggers in the problem state at or above the chosen severity
+   (`--min-severity`, warning by default).
+
+A problem counts as new when its trigger was not in the previous poll. Values
+older than 15 minutes (`--stale`) and items that were never collected count as
+missing rather than zero. One poll is three or four light requests, so the load
+on the Zabbix server is negligible.
+
+**Drawing.** The main thread draws 20 frames per second with the standard
+`curses` module and never waits for Zabbix. When new data arrives it recomputes
+each band: how often and how fast streams fall (CPU), how long they are
+(traffic), what colour they take (problems). If Zabbix stops answering, the rain
+goes on with the last data and the status line shows `NO CARRIER` with the
+reason. The program itself uses about 3-4% of one CPU core.
+
 ## Requirements
 
 * Linux or macOS, a UTF-8 terminal with 256 colours (almost any will do);
@@ -41,9 +79,9 @@ On Windows run it in WSL.
 ## Quick start
 
 ```bash
-git clone https://github.com/rozenpl/zabbix-matrix-rain.git
-cd zabbix-matrix-rain
-python3 zabbix_matrix_rain.py --demo
+git clone https://github.com/rozenpl/real-matrix.git
+cd real-matrix
+python3 real_matrix.py --demo
 ```
 
 `--demo` shows simulated hosts and needs no Zabbix. Quit with `q` or `Esc`.
@@ -68,8 +106,8 @@ items live under "Administration"):
 
 ```bash
 mkdir -p ~/.config
-install -m 600 /dev/null ~/.config/zabbix-matrix-rain.token
-nano ~/.config/zabbix-matrix-rain.token
+install -m 600 /dev/null ~/.config/real-matrix.token
+nano ~/.config/real-matrix.token
 ```
 
 The token is deliberately not accepted on the command line, where other users
@@ -79,15 +117,15 @@ of the machine could see it with `ps`.
 
 ```bash
 export ZABBIX_URL=https://zabbix.example.com
-export ZABBIX_TOKEN_FILE=~/.config/zabbix-matrix-rain.token
-python3 zabbix_matrix_rain.py --check
+export ZABBIX_TOKEN_FILE=~/.config/real-matrix.token
+python3 real_matrix.py --check
 ```
 
 `--check` polls Zabbix once and prints a table of hosts, CPU, traffic and
 problems. If it looks right:
 
 ```bash
-python3 zabbix_matrix_rain.py
+python3 real_matrix.py
 ```
 
 Certificate from a private CA: `--ca-file /path/to/ca.pem`. Self-signed:
@@ -127,7 +165,7 @@ Certificate from a private CA: `--ca-file /path/to/ca.pem`. Self-signed:
 | `--demo`, `--demo-hosts N` | | simulated hosts |
 | `--check` | | poll once, print a table, exit |
 
-Full list: `python3 zabbix_matrix_rain.py --help`.
+Full list: `python3 real_matrix.py --help`.
 
 ## Troubleshooting
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""zabbix-matrix-rain: "digital rain" in a terminal, driven by Zabbix.
+"""Real Matrix: "digital rain" in a terminal, driven by Zabbix.
 
 Every monitored host owns a band of screen columns:
 
@@ -109,7 +109,7 @@ class ZabbixClient:
         body = {"jsonrpc": "2.0", "method": method, "params": params, "id": self._id}
         headers = {
             "Content-Type": "application/json-rpc",
-            "User-Agent": "zabbix-matrix-rain/" + __version__,
+            "User-Agent": "real-matrix/" + __version__,
         }
         if auth:
             if self._legacy_auth:
@@ -827,7 +827,7 @@ def env_flag(name: str) -> bool:
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(
-        prog="zabbix-matrix-rain",
+        prog="real-matrix",
         description="Matrix-style digital rain in the terminal, driven by Zabbix metrics.",
         epilog="The API token is read from --token-file, ZABBIX_TOKEN_FILE or ZABBIX_TOKEN "
                "(it is never accepted on the command line, where other users could see it).")
