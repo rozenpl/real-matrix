@@ -31,16 +31,49 @@ Every host owns a band of screen columns.
 |---|---|
 | CPU utilisation, % (`system.cpu.util`) | how many streams fall in the band and how fast |
 | Interface traffic (`net.if.in[...]`, `net.if.out[...]`) | stream length |
-| Open problems | part of the band takes the colour of the worst problem: yellow (warning), orange (average), red (high), magenta (disaster) |
+| Open problems | part of the band takes the colour of the host's worst problem (see [Colours](#colours)) |
 | A new problem | the screen glitches, the host and problem flash in the centre and stay in the status line for 30 seconds |
 | Now and then | a stream "decodes" and spells the host name, CPU load and problem count |
 
 Problems already open at start-up show only as tinted bands: the glitch and the
 banner fire for problems raised while the rain is running. Press `t` to see
-what that looks like.
+what that looks like (see [Test problems](#test-problems)).
 
 Hosts without fresh CPU data (e.g. network devices without such an item) stay
 on screen, their band just falls slowly.
+
+## Colours
+
+The rain itself:
+
+| Colour | Meaning |
+|---|---|
+| white, bold | the leading glyph of every stream |
+| bright green fading to dark green | an ordinary stream: the host has no open problems |
+| white letters | a host name being spelled, with CPU load and `!N` open problems |
+
+Zabbix problem severities. A host with problems gets part of its band in the
+colour of its worst problem: 55% of the streams for one problem, 10% more for
+every further one, up to 95%. Its spelled name takes the same colour.
+
+| Colour | Severity | Status line letter |
+|---|---|---|
+| yellow | Warning | `W` |
+| orange (bold yellow on 8-colour terminals) | Average | `A` |
+| red | High | `H` |
+| magenta | Disaster | `D` |
+| blue | Information, shown only with `--min-severity 1` or lower | `I` |
+| grey | Not classified, shown only with `--min-severity 0` | `N` |
+
+When a new problem appears, the screen flickers for about half a second with
+inverted glyphs in its severity colour, a banner with the host and the problem
+text stays in the centre for 4 seconds, and the status line turns that colour
+for 30 seconds.
+
+The status line is green normally and red with `NO CARRIER` when Zabbix cannot
+be reached. It shows the source and Zabbix version, the number of hosts, the
+average CPU load, the number of hosts with problems by severity, for example
+`(H:1 A:1 W:2)`, and how long ago the data was fetched.
 
 ## How it works
 
@@ -131,16 +164,35 @@ python3 real_matrix.py
 Certificate from a private CA: `--ca-file /path/to/ca.pem`. Self-signed:
 `--insecure` (internal networks only).
 
-## Keys
+## Controls
 
 | Key | Action |
 |---|---|
 | `q`, `Esc` | quit |
-| `h` | toggle the status line |
-| `l` | toggle host names in the streams |
+| `t` | show a test problem (see below) |
 | `n` | spell every host name right now |
-| `t` | test problem: glitch, banner and tint for a random host; severity rises with every press from warning to disaster. Nothing is sent to Zabbix |
-| space | pause |
+| `l` | turn host names in the streams off and on |
+| `h` | hide or show the status line |
+| space | pause and resume |
+
+The window may be resized at any time, the picture adapts. With
+`--screensaver` any key quits, which suits a screensaver.
+
+## Test problems
+
+Real problems are rare (hopefully), so there are two ways to see what one
+looks like.
+
+**Key `t`.** Picks a random host on the screen and shows a fake problem for it:
+the glitch, the banner `TEST problem (local only, not in Zabbix)`, the message
+in the status line and the tinted band for about 30 seconds. Every press raises
+the severity: warning, average, high, disaster, then warning again. It happens
+only on your screen: nothing is sent to Zabbix, nobody gets notified.
+
+**Demo mode.** `python3 real_matrix.py --demo` runs twelve simulated hosts
+(`--demo-hosts N` for another number). Their load wanders and bursts, problems
+of random severity appear and resolve on their own every several seconds, so the
+whole show plays without any Zabbix server.
 
 ## Options
 
